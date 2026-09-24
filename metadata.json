@@ -1,0 +1,6 @@
+{
+  "name": "EthioSpot - Ethiopian Commerce & Local Trade Directory",
+  "description": "The verified trade registry connecting enterprise buyers, local residents, and diaspora investors with accredited merchants across Addis Ababa and regional commercial hubs.",
+  "requestFramePermissions": ["geolocation", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

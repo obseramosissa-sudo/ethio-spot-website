@@ -1,0 +1,173 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidBusiness(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 50
+        && data.district is string && data.district.size() > 0 && data.district.size() <= 80
+        && data.address is string && data.address.size() > 0 && data.address.size() <= 200
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30
+        && (!('description' in data) || (data.description is string && data.description.size() <= 2000))
+        && (!('priceRange' in data) || (data.priceRange is string && data.priceRange.size() <= 100))
+        && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1500))
+        && (!('creatorId' in data) || (data.creatorId is string && data.creatorId.size() <= 128));
+    }
+
+    function isValidQuote(data) {
+      return data.contactName is string && data.contactName.size() > 0 && data.contactName.size() <= 100
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30
+        && data.organization is string && data.organization.size() > 0 && data.organization.size() <= 150
+        && (!('quantityNotes' in data) || (data.quantityNotes is string && data.quantityNotes.size() <= 1000))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 100))
+        && (!('urgency' in data) || (data.urgency is string && data.urgency.size() <= 50))
+        && (!('senderId' in data) || (data.senderId is string && data.senderId.size() <= 128));
+    }
+
+    function isValidClaim(data) {
+      return data.businessName is string && data.businessName.size() > 0 && data.businessName.size() <= 150
+        && data.licenseNumber is string && data.licenseNumber.size() > 0 && data.licenseNumber.size() <= 60
+        && data.tinNumber is string && data.tinNumber.size() > 0 && data.tinNumber.size() <= 60
+        && data.applicantName is string && data.applicantName.size() > 0 && data.applicantName.size() <= 100
+        && data.applicantPhone is string && data.applicantPhone.size() > 0 && data.applicantPhone.size() <= 30
+        && (!('role' in data) || (data.role is string && data.role.size() <= 80))
+        && (!('applicantId' in data) || (data.applicantId is string && data.applicantId.size() <= 128));
+    }
+
+    function isValidReview(data) {
+      return data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.userName is string && data.userName.size() > 0 && data.userName.size() <= 100
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && data.comment is string && data.comment.size() > 0 && data.comment.size() <= 1000;
+    }
+
+    function isValidReport(data) {
+      return data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128
+        && data.businessName is string && data.businessName.size() > 0 && data.businessName.size() <= 150
+        && data.issueType is string && data.issueType.size() > 0 && data.issueType.size() <= 100
+        && data.description is string && data.description.size() > 0 && data.description.size() <= 1000
+        && (!('userId' in data) || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    function isValidFavorite(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128;
+    }
+
+    function isValidPromotion(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128
+        && data.businessName is string && data.businessName.size() > 0 && data.businessName.size() <= 150
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 150
+        && data.description is string && data.description.size() > 0 && data.description.size() <= 1000
+        && data.expiresAt is string && data.expiresAt.size() > 0 && data.expiresAt.size() <= 50;
+    }
+
+    function isValidMessage(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128
+        && data.userId is string && data.userId == request.auth.uid
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 1000
+        && data.sender is string && data.sender.size() > 0 && data.sender.size() <= 20;
+    }
+
+    // Public Commercial Businesses Directory
+    match /businesses/{businessId} {
+      allow get: if isValidId(businessId);
+      allow list: if true;
+      allow create: if isValidId(businessId) && isValidBusiness(incoming()) && (
+        !('creatorId' in incoming()) || (isSignedIn() && incoming().creatorId == request.auth.uid)
+      );
+      allow update: if isValidId(businessId) && isSignedIn() && (
+        !('creatorId' in existing()) || existing().creatorId == request.auth.uid || request.auth.token.admin == true
+      );
+      allow delete: if isValidId(businessId) && isSignedIn() && (
+        !('creatorId' in existing()) || existing().creatorId == request.auth.uid || request.auth.token.admin == true
+      );
+
+      // Subcollection for reviews & ratings
+      match /reviews/{reviewId} {
+        allow list, get: if isValidId(businessId) && isValidId(reviewId);
+        allow create: if isSignedIn() && isValidId(businessId) && isValidId(reviewId) && isValidReview(incoming()) && incoming().userId == request.auth.uid;
+        allow update, delete: if isSignedIn() && isValidId(businessId) && isValidId(reviewId) && resource.data.userId == request.auth.uid;
+      }
+
+      // Subcollection for direct chat messages / inquiries
+      match /messages/{messageId} {
+        allow list, get: if isSignedIn() && isValidId(businessId) && isValidId(messageId);
+        allow create: if isSignedIn() && isValidId(businessId) && isValidId(messageId) && isValidMessage(incoming()) && incoming().userId == request.auth.uid;
+        allow update, delete: if isSignedIn() && isValidId(businessId) && isValidId(messageId) && (resource.data.userId == request.auth.uid || request.auth.token.admin == true);
+      }
+    }
+
+    // B2B Procurement Quotes
+    match /quotes/{quoteId} {
+      allow create: if isValidId(quoteId) && isValidQuote(incoming()) && (
+        !('senderId' in incoming()) || (isSignedIn() && incoming().senderId == request.auth.uid)
+      );
+      allow get: if isValidId(quoteId) && (
+        !('senderId' in resource.data) || (isSignedIn() && resource.data.senderId == request.auth.uid) || (isSignedIn() && request.auth.token.admin == true)
+      );
+      allow list: if isSignedIn();
+      allow update, delete: if isValidId(quoteId) && isSignedIn();
+    }
+
+    // Incorrect Data Reports
+    match /reports/{reportId} {
+      allow create: if isValidId(reportId) && isValidReport(incoming()) && (
+        !('userId' in incoming()) || (isSignedIn() && incoming().userId == request.auth.uid)
+      );
+      allow get, list, update, delete: if isSignedIn() && request.auth.token.admin == true;
+    }
+
+    // Ownership & License Claims
+    match /claims/{claimId} {
+      allow create: if isValidId(claimId) && isValidClaim(incoming()) && (
+        !('applicantId' in incoming()) || (isSignedIn() && incoming().applicantId == request.auth.uid)
+      );
+      allow get: if isValidId(claimId) && (
+        !('applicantId' in resource.data) || (isSignedIn() && resource.data.applicantId == request.auth.uid) || (isSignedIn() && request.auth.token.admin == true)
+      );
+      allow list: if isSignedIn();
+      allow update, delete: if isValidId(claimId) && isSignedIn();
+    }
+
+    // User personal favorites
+    match /users/{userId}/favorites/{businessId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(businessId) && isValidFavorite(incoming());
+      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(businessId);
+    }
+
+    // Promotions and Events
+    match /promotions/{promoId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn() && isValidId(promoId) && isValidPromotion(incoming());
+      allow delete: if isSignedIn();
+    }
+  }
+}

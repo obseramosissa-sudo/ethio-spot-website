@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "Business": {
+      "title": "Business",
+      "description": "Commercial business or verified enterprise listing in Addis Ababa.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "nameAmharic": { "type": "string", "maxLength": 150 },
+        "category": { "type": "string", "maxLength": 50 },
+        "categoryLabel": { "type": "string", "maxLength": 50 },
+        "subCategory": { "type": "string", "maxLength": 80 },
+        "district": { "type": "string", "maxLength": 80 },
+        "address": { "type": "string", "maxLength": 200 },
+        "addressAmharic": { "type": "string", "maxLength": 200 },
+        "licenseNumber": { "type": "string", "maxLength": 60 },
+        "licenseType": { "type": "string", "maxLength": 50 },
+        "isOpen": { "type": "boolean" },
+        "hours": { "type": "string", "maxLength": 100 },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "distanceKm": { "type": "number" },
+        "priceRange": { "type": "string", "maxLength": 100 },
+        "imageUrl": { "type": "string", "maxLength": 1500 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "telegram": { "type": "string", "maxLength": 50 },
+        "whatsapp": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "bannerTitle": { "type": "string", "maxLength": 150 },
+        "creatorId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["name", "category", "district", "address", "phone"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "B2B procurement or commercial trade quote request.",
+      "type": "object",
+      "properties": {
+        "businessId": { "type": "string", "maxLength": 128 },
+        "businessName": { "type": "string", "maxLength": 150 },
+        "category": { "type": "string", "maxLength": 50 },
+        "contactName": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 100 },
+        "quantityNotes": { "type": "string", "maxLength": 1000 },
+        "organization": { "type": "string", "maxLength": 150 },
+        "urgency": { "type": "string", "maxLength": 50 },
+        "senderId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["contactName", "phone", "organization"]
+    },
+    "Claim": {
+      "title": "Claim",
+      "description": "Merchant business ownership verification claim.",
+      "type": "object",
+      "properties": {
+        "businessName": { "type": "string", "maxLength": 150 },
+        "licenseNumber": { "type": "string", "maxLength": 60 },
+        "tinNumber": { "type": "string", "maxLength": 60 },
+        "applicantName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "maxLength": 80 },
+        "applicantPhone": { "type": "string", "maxLength": 30 },
+        "idDocumentName": { "type": "string", "maxLength": 150 },
+        "status": { "type": "string", "maxLength": 50 },
+        "submittedAt": { "type": "string", "maxLength": 50 },
+        "applicantId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["businessName", "licenseNumber", "tinNumber", "applicantName", "applicantPhone"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Verified user star rating and text review for a business.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userPhoto": { "type": "string", "maxLength": 1000 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["businessId", "userId", "userName", "rating", "comment"]
+    },
+    "DataReport": {
+      "title": "DataReport",
+      "description": "Report of incorrect business information submitted by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "businessName": { "type": "string", "maxLength": 150 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 128 },
+        "issueType": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["businessId", "businessName", "issueType", "description"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "User personal saved favorite business bookmark.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "userId", "businessId"]
+    },
+    "Promotion": {
+      "title": "Promotion",
+      "description": "Time-sensitive updates, discounts, or local events posted by businesses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "businessName": { "type": "string", "maxLength": 150 },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "category": { "type": "string", "maxLength": 50 },
+        "discountBadge": { "type": "string", "maxLength": 50 },
+        "expiresAt": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "businessId", "businessName", "title", "description", "expiresAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Direct inquiry or chat message between user and business",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 150 },
+        "userEmail": { "type": "string", "maxLength": 150 },
+        "text": { "type": "string", "maxLength": 1000 },
+        "sender": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "businessId", "userId", "text", "sender", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/businesses/{businessId}": {
+      "schema": "Business",
+      "description": "Commercial businesses and verified merchants in Addis Ababa"
+    },
+    "/businesses/{businessId}/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "User reviews and star ratings for a business"
+    },
+    "/businesses/{businessId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Real-time direct chat inquiries between users and businesses"
+    },
+    "/reports/{reportId}": {
+      "schema": "DataReport",
+      "description": "Incorrect data reports submitted by users for admin review"
+    },
+    "/quotes/{quoteId}": {
+      "schema": "Quote",
+      "description": "B2B quotes submitted by registered buyers or agents"
+    },
+    "/claims/{claimId}": {
+      "schema": "Claim",
+      "description": "Business ownership and Ministry of Trade license verification claims"
+    },
+    "/users/{userId}/favorites/{businessId}": {
+      "schema": "Favorite",
+      "description": "User personal saved favorite businesses"
+    },
+    "/promotions/{promoId}": {
+      "schema": "Promotion",
+      "description": "Active time-sensitive promotions, discounts, and local merchant events"
+    }
+  }
+}
