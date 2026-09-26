@@ -1,3 +1,4 @@
+import { fetchBusinessImagesFromSupabase, saveBusinessImageToSupabase } from '../lib/supabase';
 import React, { useState, useEffect } from 'react';
 import { BusinessSpot } from '../types';
 import { downloadSingleBusinessPdf } from '../lib/pdfGenerator';
@@ -115,6 +116,29 @@ export const BusinessDetailModal: React.FC<BusinessDetailModalProps> = ({
       'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=800&q=80',
     ];
   });
+
+  // Fetch additional photos from Supabase business_images table
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSupabaseImages() {
+      if (!business?.id) return;
+      try {
+        const photos = await fetchBusinessImagesFromSupabase(business.id);
+        if (photos.length > 0 && isMounted) {
+          setGalleryImages(prev => {
+            const combined = Array.from(new Set([...photos, ...prev, business.imageUrl]));
+            return combined;
+          });
+        }
+      } catch (err) {
+        console.warn("Error loading business images from Supabase:", err);
+      }
+    }
+    loadSupabaseImages();
+    return () => {
+      isMounted = false;
+    };
+  }, [business?.id]);
 
   useEffect(() => {
     if (business?.galleryImages && business.galleryImages.length > 0) {
@@ -296,9 +320,9 @@ export const BusinessDetailModal: React.FC<BusinessDetailModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${business.name} (${business.nameAmharic}) - EthioSpot`,
-          text: `Check out ${business.name} in ${business.district}, Addis Ababa. Verified MoT merchant on EthioSpot.`,
-          url: window.location.href,
+          title: `${business.name} (${business.nameAmharic}) • EthioSpot`,
+          text: `Check out ${business.name} (${business.nameAmharic}) in ${business.district}, Addis Ababa. Verified ${business.licenseType} merchant on EthioSpot!`,
+          url: businessDeepLink,
         });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
@@ -307,8 +331,9 @@ export const BusinessDetailModal: React.FC<BusinessDetailModalProps> = ({
       }
     } else {
       try {
-        await navigator.clipboard.writeText(window.location.href);
-        alert('Business link copied to clipboard!');
+        await navigator.clipboard.writeText(businessDeepLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
       } catch {
         // ignore
       }
@@ -423,9 +448,10 @@ export const BusinessDetailModal: React.FC<BusinessDetailModalProps> = ({
             <button
               onClick={handleShare}
               title="Share business profile"
-              className="w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer"
+              className="px-3 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white text-[12px] font-bold flex items-center gap-1.5 backdrop-blur-md transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[18px]">share</span>
+              <span className="material-symbols-outlined text-[16px]">share</span>
+              <span>{copiedLink ? 'Copied!' : 'Share'}</span>
             </button>
             <button
               onClick={onClose}

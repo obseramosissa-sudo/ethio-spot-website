@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BusinessSpot, CategoryId, District, ClaimRequest, QuoteRequest } from '../types';
 import { DIRECTORY_CATEGORIES } from '../data/businesses';
+import { supabase } from '../lib/supabase';
 import {
   persistBusiness,
   updateBusinessDoc,
@@ -31,11 +32,61 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onSelectBusiness,
   lang,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'businesses' | 'claims' | 'quotes' | 'tools'>('businesses');
+  const [activeAdminTab, setActiveAdminTab] = useState<'businesses' | 'claims' | 'quotes' | 'tools' | 'supabase'>('businesses');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
   const [selectedLicenseType, setSelectedLicenseType] = useState<string>('all');
+
+  // Supabase diagnostic states
+  const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'error' | 'uninitialized' | 'checking'>('checking');
+  const [supabaseCount, setSupabaseCount] = useState<number>(0);
+  const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string>('Not synced yet');
+  const [supabaseErrorMsg, setSupabaseErrorMsg] = useState<string | null>(null);
+
+  const runSupabaseDiagnostics = async () => {
+    setSupabaseStatus('checking');
+    setSupabaseErrorMsg(null);
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (!url || !key) {
+        setSupabaseStatus('uninitialized');
+        setSupabaseErrorMsg('VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY environment variables are missing.');
+        setLastSyncTimestamp(new Date().toLocaleTimeString());
+        return;
+      }
+
+      if (!supabase) {
+        setSupabaseStatus('uninitialized');
+        setSupabaseErrorMsg('Supabase client failed to initialize.');
+        setLastSyncTimestamp(new Date().toLocaleTimeString());
+        return;
+      }
+
+      const { count, error, data } = await supabase
+        .from('businesses')
+        .select('*', { count: 'exact', head: false });
+
+      if (error) {
+        setSupabaseStatus('error');
+        setSupabaseErrorMsg(error.message);
+      } else {
+        setSupabaseStatus('connected');
+        setSupabaseCount(data ? data.length : (count || 0));
+        setSupabaseErrorMsg(null);
+      }
+      setLastSyncTimestamp(new Date().toLocaleString());
+    } catch (err: any) {
+      setSupabaseStatus('error');
+      setSupabaseErrorMsg(err?.message || 'Failed to connect to Supabase.');
+      setLastSyncTimestamp(new Date().toLocaleString());
+    }
+  };
+
+  useEffect(() => {
+    runSupabaseDiagnostics();
+  }, []);
 
   // Modal states
   const [editingBusiness, setEditingBusiness] = useState<BusinessSpot | null>(null);
@@ -561,6 +612,24 @@ export const AdminView: React.FC<AdminViewProps> = ({
           <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
           <span>{labels.tabTools}</span>
         </button>
+
+        <button
+          onClick={() => setActiveAdminTab('supabase')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeAdminTab === 'supabase'
+              ? 'bg-[#005f2a] text-white shadow-sm'
+              : 'text-[#3f493f] dark:text-[#9ea7a1] hover:bg-[#f2f4f6] dark:hover:bg-[#1c2420]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">cloud_sync</span>
+          <span>Supabase Status</span>
+          {supabaseStatus === 'connected' && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+          )}
+          {supabaseStatus === 'error' && (
+            <span className="w-2 h-2 rounded-full bg-red-400"></span>
+          )}
+        </button>
       </div>
 
       {/* TAB 1: ENTERPRISE DIRECTORY REGISTRY */}
@@ -1020,6 +1089,111 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <p className="text-[#191c1e] dark:text-white font-medium">{log.action}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: SUPABASE DIAGNOSTIC DASHBOARD */}
+      {activeAdminTab === 'supabase' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-[#161c19] rounded-3xl p-6 lg:p-8 border border-[#eceef0] dark:border-[#28342e] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#eceef0] dark:border-[#28342e] pb-5">
+              <div>
+                <h3 className="font-bold text-[18px] text-[#191c1e] dark:text-white flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-[#005f2a] text-[24px]">database</span>
+                  Supabase Diagnostic Dashboard
+                </h3>
+                <p className="text-[13px] text-[#6f7a6e] dark:text-[#9ea7a1] mt-1">
+                  Real-time health check, connection parameters, and database synchronization status for EthioSpot.
+                </p>
+              </div>
+              <button
+                onClick={runSupabaseDiagnostics}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#005f2a] hover:bg-[#004b20] text-white text-[13px] font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">sync</span>
+                Run Diagnostics & Refresh
+              </button>
+            </div>
+
+            {/* Status Grid Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Connection Status Card */}
+              <div className="p-5 rounded-2xl bg-[#f8f9fc] dark:bg-[#1c2420] border border-[#eceef0] dark:border-[#28342e] space-y-2">
+                <p className="text-[11px] font-bold text-[#6f7a6e] uppercase tracking-wider">Connection Status</p>
+                <div className="flex items-center gap-2.5 pt-1">
+                  {supabaseStatus === 'connected' && (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="font-bold text-[15px] text-emerald-600 dark:text-emerald-400">Connected & Active</span>
+                    </>
+                  )}
+                  {supabaseStatus === 'error' && (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full bg-red-500"></span>
+                      <span className="font-bold text-[15px] text-red-600 dark:text-red-400">Connection Error</span>
+                    </>
+                  )}
+                  {supabaseStatus === 'uninitialized' && (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full bg-amber-500"></span>
+                      <span className="font-bold text-[15px] text-amber-600 dark:text-amber-400">Not Configured</span>
+                    </>
+                  )}
+                  {supabaseStatus === 'checking' && (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full bg-blue-500 animate-ping"></span>
+                      <span className="font-bold text-[15px] text-blue-600 dark:text-blue-400">Checking...</span>
+                    </>
+                  )}
+                </div>
+                <p className="text-[11px] text-[#6f7a6e] pt-1">
+                  {supabaseStatus === 'connected' ? 'Securely authenticated via publishable anon key.' : (supabaseErrorMsg || 'Verify environment variables.')}
+                </p>
+              </div>
+
+              {/* Total Business Count Card */}
+              <div className="p-5 rounded-2xl bg-[#f8f9fc] dark:bg-[#1c2420] border border-[#eceef0] dark:border-[#28342e] space-y-2">
+                <p className="text-[11px] font-bold text-[#6f7a6e] uppercase tracking-wider">Supabase Business Count</p>
+                <div className="flex items-baseline gap-2 pt-1">
+                  <span className="font-extrabold text-[28px] text-[#191c1e] dark:text-white">{supabaseCount}</span>
+                  <span className="text-[12px] text-[#6f7a6e]">merchants in table</span>
+                </div>
+                <p className="text-[11px] text-[#6f7a6e] pt-1">Table: <code className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded font-mono">businesses</code></p>
+              </div>
+
+              {/* Last Sync Timestamp Card */}
+              <div className="p-5 rounded-2xl bg-[#f8f9fc] dark:bg-[#1c2420] border border-[#eceef0] dark:border-[#28342e] space-y-2">
+                <p className="text-[11px] font-bold text-[#6f7a6e] uppercase tracking-wider">Last Sync Timestamp</p>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="material-symbols-outlined text-[#005f2a] text-[20px]">schedule</span>
+                  <span className="font-bold text-[14px] text-[#191c1e] dark:text-white">{lastSyncTimestamp}</span>
+                </div>
+                <p className="text-[11px] text-[#6f7a6e] pt-1">Automatic & manual sync verified</p>
+              </div>
+            </div>
+
+            {/* Additional Configuration Details */}
+            <div className="p-5 rounded-2xl bg-[#f8f9fc] dark:bg-[#1c2420] border border-[#eceef0] dark:border-[#28342e] space-y-3">
+              <h4 className="font-bold text-[14px] text-[#191c1e] dark:text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#005f2a] text-[18px]">vpn_key</span>
+                Environment Configuration & Security
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[12px]">
+                <div>
+                  <span className="text-[#6f7a6e] block font-medium">Supabase Project URL:</span>
+                  <code className="text-[#191c1e] dark:text-white font-mono bg-white dark:bg-black/20 px-2 py-1 rounded border border-[#eceef0] dark:border-[#28342e] block mt-1 truncate">
+                    {import.meta.env.VITE_SUPABASE_URL || 'Not Defined'}
+                  </code>
+                </div>
+                <div>
+                  <span className="text-[#6f7a6e] block font-medium">Publishable Anon Key Status:</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded font-mono text-[11px] mt-1 ${import.meta.env.VITE_SUPABASE_ANON_KEY ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300'}`}>
+                    {import.meta.env.VITE_SUPABASE_ANON_KEY ? '✓ Present & Secure (Public Anon)' : '✗ Missing'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

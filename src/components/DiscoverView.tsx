@@ -218,15 +218,20 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
           </div>
 
           {/* Headline & Subtext */}
-          <h1 className="font-['Plus_Jakarta_Sans'] text-[36px] sm:text-[44px] md:text-[46px] md:leading-[54px] font-bold text-[#191c1e] tracking-tight max-w-3xl mb-4">
+          <h1 className="font-['Plus_Jakarta_Sans'] text-[36px] sm:text-[44px] md:text-[46px] md:leading-[54px] font-bold text-[#191c1e] tracking-tight max-w-3xl mb-3">
             Empowering{' '}
             <span className="text-[#005f2a] underline decoration-[#f9bd00]/70 decoration-wavy decoration-2 underline-offset-8">
               Ethiopian Commerce & Local Trade
             </span>
           </h1>
-          <p className="text-[16px] leading-relaxed text-[#3f493f] max-w-2xl mb-8">
-            The verified registry connecting enterprise buyers, local residents, and diaspora investors with accredited merchants across Addis Ababa and regional commercial hubs.
-          </p>
+          <div className="mb-8 flex flex-col items-center gap-2 max-w-2xl">
+            <p className="text-[16px] leading-relaxed text-[#3f493f]">
+              The verified EthioSpot registry connecting enterprise buyers, local residents, and diaspora investors with accredited merchants across Addis Ababa and regional commercial hubs.
+            </p>
+            <p className="text-[14px] leading-relaxed text-[#005f2a] font-semibold bg-[#005f2a]/8 px-4 py-1.5 rounded-full border border-[#005f2a]/15 shadow-sm">
+              🇪🇹 EthioSpot — የተረጋገጡ የኢትዮጵያ ንግድ ተቋማት እና የገበያ ማዕከላት መግቢያ
+            </p>
+          </div>
 
           {/* Elevated Omnibox Search Command Capsule */}
           <div className="w-full bg-white rounded-3xl p-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#eceef0] flex flex-col md:flex-row items-stretch gap-2 transition-all hover:shadow-[0_12px_40px_rgba(0,95,42,0.08)]">

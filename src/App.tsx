@@ -24,6 +24,7 @@ import { logUserActivity } from './lib/userActivity';
 import { INITIAL_BUSINESSES } from './data/businesses';
 import { BusinessSpot, District, NavigationTab, QuoteRequest } from './types';
 import { db, persistBusiness, persistQuote, fetchUserFavorites, addFavorite, removeFavorite, fetchPromotions, Promotion, handleFirestoreError, OperationType } from './lib/firebase';
+import { fetchBusinessesFromSupabase, saveBusinessToSupabase } from './lib/supabase';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 function EthioSpotMain() {
@@ -167,9 +168,18 @@ function EthioSpotMain() {
   // Notification states
   const [notificationMsg, setNotificationMsg] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
 
-  // Load businesses from Cloud SQL database and synchronize
+  // Load businesses from Supabase and Cloud SQL database
   useEffect(() => {
-    const loadCloudSqlBusinesses = async () => {
+    const loadBusinesses = async () => {
+      try {
+        const supabaseList = await fetchBusinessesFromSupabase();
+        if (Array.isArray(supabaseList) && supabaseList.length > 0) {
+          setBusinesses(supabaseList);
+        }
+      } catch (err) {
+        console.warn('Could not fetch from Supabase:', err);
+      }
+
       try {
         const res = await fetch('/api/businesses');
         if (res.ok) {
@@ -183,7 +193,7 @@ function EthioSpotMain() {
       }
     };
 
-    loadCloudSqlBusinesses();
+    loadBusinesses();
 
     // Attach real-time Firestore listener with mandatory error callback
     const pathForOnSnapshot = 'businesses';
@@ -275,6 +285,22 @@ function EthioSpotMain() {
     // Optimistic local state update
     setBusinesses((prev) => [newBusiness, ...prev]);
 
+    // Save to Supabase database
+    const { success, error } = await saveBusinessToSupabase(newBusiness);
+
+    if (success) {
+      setNotificationMsg({
+        text: `"${newBusiness.name}" successfully registered and saved to Supabase!`,
+        type: 'success',
+      });
+    } else {
+      console.warn('Supabase save error:', error);
+      setNotificationMsg({
+        text: `"${newBusiness.name}" added successfully. Note: ${error || 'Supabase persistence notice.'}`,
+        type: 'info',
+      });
+    }
+
     // Persist to Cloud SQL backend
     fetch('/api/businesses', {
       method: 'POST',
@@ -285,21 +311,13 @@ function EthioSpotMain() {
     // Persist to Firestore
     try {
       await persistBusiness(newBusiness);
-      setNotificationMsg({
-        text: `"${newBusiness.name}" registered successfully!`,
-        type: 'success',
-      });
-    } catch (error) {
-      console.error('Error saving business:', error);
-      setNotificationMsg({
-        text: `"${newBusiness.name}" registered in local session.`,
-        type: 'info',
-      });
+    } catch (err) {
+      console.warn('Firestore persistence warning:', err);
     }
 
     setTimeout(() => {
       setNotificationMsg(null);
-    }, 4000);
+    }, 4500);
   };
 
   const handleSubmitQuote = async (quote: QuoteRequest) => {
